@@ -1676,7 +1676,8 @@ function closeExport(){
   EX=null;
 }
 function pickMime(){
-  const c=['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  const hi=state.quality==='1080';
+  const c=[hi?'video/mp4;codecs=avc1.640028,mp4a.40.2':'video/mp4;codecs=avc1.64001F,mp4a.40.2','video/mp4;codecs=avc1.4D401F,mp4a.40.2','video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4;codecs=avc1,mp4a.40.2','video/mp4;codecs=h264,aac','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
   return c.find(m=>{try{return MediaRecorder.isTypeSupported(m)}catch(_){return false}})||'';
 }
 function exportUi(html){$('exportBody').innerHTML=`<div class="rounded-2xl bg-slate-900 border border-slate-700 p-5 space-y-3 text-left">${html}</div>`;$('exportModal').classList.add('open')}
@@ -1693,7 +1694,7 @@ async function exportVideo(){
   const a=getActx();try{await a.resume()}catch(_){}
   const dest=a.createMediaStreamDestination(),stream=cv.captureStream(30);
   dest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
-  const mime=pickMime(),hi=state.quality==='1080',opts={videoBitsPerSecond:hi?9e6:5e6,audioBitsPerSecond:128000};if(mime)opts.mimeType=mime;
+  const mime=pickMime();if(!mime.includes('mp4'))showToast('Browser ini hanya bisa merekam WebM, galeri HP mungkin tidak bisa memutarnya. Pakai Chrome terbaru agar hasilnya MP4.','info');const hi=state.quality==='1080',opts={videoBitsPerSecond:hi?9e6:5e6,audioBitsPerSecond:128000};if(mime)opts.mimeType=mime;
   let rec;try{rec=new MediaRecorder(stream,opts)}catch(e){showToast('Perekam video gagal dibuat: '+e.message,'error');return}
   EX={cv,cx:cv.getContext('2d'),rec,chunks:[],mime:mime||'video/webm',W,H,cancelled:false,url:'',filename:''};
   rec.ondataavailable=e=>{if(e.data&&e.data.size)EX&&EX.chunks.push(e.data)};
@@ -1730,7 +1731,7 @@ async function finishExport(){
   ex.url=URL.createObjectURL(blob);ex.filename=`youtube-generator-${Date.now()}.${ext}`;
   exportUi(`<h3 class="text-sm font-bold text-white"><i class="fa-solid fa-circle-check text-emerald-400 mr-2"></i>Video siap!</h3>
     <video src="${ex.url}" controls playsinline class="w-full rounded-xl bg-black" style="max-height:48vh"></video>
-    <p class="help">Format ${ext.toUpperCase()} • ${(blob.size/1048576).toFixed(1)} MB • ${ex.W}×${ex.H}${ext==='webm'?'. YouTube menerima file WebM, jadi bisa langsung diunggah.':''}</p>
+    <p class="help">Format ${ext.toUpperCase()} • ${(blob.size/1048576).toFixed(1)} MB • ${ex.W}×${ex.H}${ext==='webm'?'':' • MP4 H.264/AAC'}</p>${ext==='webm'?'<p class="help" style="color:#fbbf24">Format WebM: YouTube menerimanya, tetapi galeri HP biasanya tidak bisa memutarnya. Untuk MP4 yang terbaca di galeri, ekspor memakai Chrome atau Edge versi terbaru.</p>':''}
     <div class="flex gap-2"><button type="button" id="btnExDownload" class="btn btn-green flex-1"><i class="fa-solid fa-download"></i>Unduh Video</button><button type="button" id="btnExClose" class="btn btn-ghost">Tutup</button></div>
     <p class="help">Jangan lupa salin kredit media di panel Ekspor dan tempel di deskripsi video.</p>`);
   seek(0);
